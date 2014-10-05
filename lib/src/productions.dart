@@ -25,9 +25,9 @@ const String expression = 'expression';
 const String primaryExpression = 'primaryExpression';
 const String binaryExpression = 'binaryExpression';
 const String binaryPart = 'binaryPart';
-const String fieldref = 'fieldref';
 const String identifier = 'identifier';
 const String varName = 'varName';
+const String fieldName = 'fieldName';
 const String fieldrefInBrackets = 'fieldrefInBrackets';
 const String str = 'str';
 const String constant = 'constant';
@@ -56,6 +56,8 @@ const String setElementFunction = 'setElementFunction';
 const String setElement = 'setElement';
 const String setElementSetInParens = 'setElementSetInParens';
 const String setElementSetPrimary = 'setElementSetPrimary';
+const String totalClause = 'totalClause';
+const String totalModifier = 'totalModifier';
 
 
 

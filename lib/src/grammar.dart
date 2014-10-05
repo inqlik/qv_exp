@@ -52,14 +52,14 @@ class QvExpGrammar extends CompositeParser {
       ref(p.setElementSetPrimary).separatedBy(ref(p.setOperator), includeSeparators: true));
 
     def(p.setFieldSelection,
-      ref(p.identifier).or(ref(p.fieldrefInBrackets)).
+      ref(p.fieldName).
       seq(_keyword('=').
           or(_keyword('-=')).
           or(_keyword('+=')).
           or(_keyword('*=')).
           or(_keyword('/='))).
       seq(ref(p.setElementSetExpression).optional()).
-      or(ref(p.identifier).or(ref(p.fieldrefInBrackets))));
+      or(ref(p.fieldName)));
     def(p.setModifier,
       _keyword('<').
       seq(ref(p.setFieldSelection).separatedBy(_keyword(','), includeSeparators: false)).
@@ -68,7 +68,7 @@ class QvExpGrammar extends CompositeParser {
       _keyword('P').or(_keyword('E')).
       seq(_keyword('(')).
       seq(ref(p.setExpression)).
-      seq(ref(p.identifier).or(ref(p.fieldrefInBrackets)).optional()).
+      seq(ref(p.fieldName).optional()).
       seq(_keyword(')')));
     
   }
@@ -86,6 +86,13 @@ class QvExpGrammar extends CompositeParser {
         );
     def(p.params,
         ref(p.expression).separatedBy(char(',').trim(trimmer), includeSeparators: false));
+    def(p.totalClause,
+        _keyword('TOTAL')
+        .seq(ref(p.totalModifier).optional()));
+    def(p.totalModifier,
+        _keyword('<')
+        .seq(ref(p.fieldName).separatedBy(char(',').trim(trimmer), includeSeparators: false))
+        .seq(_keyword('>')));
     def(p.paramsOptional,
         ref(p.expression).optional().separatedBy(char(',').trim(trimmer), includeSeparators: false));
     def(p.parens,
@@ -121,17 +128,15 @@ class QvExpGrammar extends CompositeParser {
         .or(ref(p.macroFunction))
         .or(ref(p.function))
         .or(ref(p.number))
-        .or(ref(p.fieldref))
+        .or(ref(p.fieldName))
         .or(ref(p.parens)));
     def(p.binaryExpression, ref(p.primaryExpression)
         .seq(ref(p.binaryPart).star()).trim(trimmer).flatten());
     def(p.binaryPart, ref(p.binaryOperator)
         .seq(ref(p.primaryExpression)));
-    def(p.fieldref,
+    def(p.fieldName,
           _keyword(ref(p.identifier)
-          .or(ref(p.fieldrefInBrackets))
-          .or(ref(p.str)).trim(trimmer)
-          ));
+          .or(ref(p.fieldrefInBrackets))));
     def(p.identifier,letter().or(anyIn('_%@').or(localLetter()))
         .seq(word().or(anyIn('.%')).or(char('_')).or(localLetter().or(char(r'$'))).plus())
         .or(letter())
@@ -161,6 +166,9 @@ class QvExpGrammar extends CompositeParser {
         .seq(word().or(char('#')).plus()).flatten()
         .trim(trimmer)
         .seq(char('(').trim(trimmer))
+        .seq(ref(p.setExpression).optional())
+        .seq(_keyword('DISTINCT').optional())
+        .seq(ref(p.totalClause).optional())
         .seq(ref(p.params).optional())
         .seq(char(')').trim(trimmer)));
     def(p.userFunction,

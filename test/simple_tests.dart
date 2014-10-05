@@ -176,9 +176,56 @@ void main() {
          shouldPass(r"""{$<Customer = E({1<Product={'Shoe'}>})>}""",p.setExpression);
        });
 
-    });
+    });  
+  });
+  group('Functions: ', (){
+    test(r"""count({$} DISTINCT [Invoice Number])""",() {
+         shouldPass(r"""count({$} DISTINCT [Invoice Number])""",p.expression);
+     });
+    test(r"""count({State1} DISTINCT [Invoice Number])""",() {
+         shouldPass(r"""count({State1} DISTINCT [Invoice Number])""",p.expression);
+     });
+    skip_test(r"""count({$<[Invoice Number] = p({$} [Invoice Number]) * p({State1} [Invoice Number])>} DISTINCT
+[Invoice Number])""",() {
+         shouldPass(r"""count({$<[Invoice Number] = p({$} [Invoice Number]) * p({State1} [Invoice Number])>} DISTINCT [Invoice Number])""",p.expression);
+     });
+    test(r"""sum(Price*Quantity)""",() {
+         shouldPass(r"""sum(Price*Quantity)""",p.expression);
+     });
+
+    test(r"""sum(distinct Price)""",() {
+         shouldPass(r"""sum(distinct Price)""",p.expression);
+     });
+    test(r"""sum(Sales)/sum(total Sales) """,() {
+         shouldPass(r"""sum(Sales)/sum(total Sales) """,p.expression);
+     });
+    test(r"""sum(Sales)/sum(total <Month> Sales) """,() {
+         shouldPass(r"""sum(Sales)/sum(total <Month> Sales) """,p.expression);
+     });
+    test(r"""sum(Sales)/sum(total <Month,Grp> Sales)""",() {
+         shouldPass(r"""sum(Sales)/sum(total <Month,Grp> Sales)""",p.expression);
+     });
+    test(r"""sum(Sales)/sum(total <Qtr,Month,Week> Sales) """,() {
+         shouldPass(r"""sum(Sales)/sum(total <Qtr,Month,Week>Sales) """,p.expression);
+     });
+    test(r"""sum(Sales ASDFASDFA ASDFASDF) - should fail""",() {
+         shouldFail(r"""sum(Sales ASDFASDFA ASDFASDF)""",p.expression);
+     });
+    test(r"""sum(Sales ASDFASDFA) - should fail""",() {
+         shouldFail(r"""sum(Sales ASDFASDFA)""",p.expression);
+     });
+    test(r"""sum(Sales DISTINCT) - should fail""",() {
+         shouldFail(r"""sum(Sales DISTINCT)""",p.expression);
+     });
+
+    test(r"""sum(DISTINCT {1} TOTAL  Sales) - should fail""",() {
+         shouldFail(r"""sum(DISTINCT {1} TOTAL  Sales)""",p.expression);
+     });
+    test(r"""firstsortedvalue ( total <Grp> PurchasedArticle, OrderDate )""",() {
+         shouldPass(r"""firstsortedvalue ( total <Grp> PurchasedArticle, OrderDate )""",p.expression);
+     });
+    
     
   });
-
   
 }
