@@ -19,13 +19,15 @@ class QvExpGrammar extends CompositeParser {
     def(p.setEntity,
       ref(p.setEntityPrimary).separatedBy(ref(p.setOperator), includeSeparators: true));
     def(p.setEntitySimple,
-      ref(p.setIdentifier));
+      ref(p.setIdentifier).
+      seq(ref(p.setModifier).optional()));
     def(p.setEntityPrimary,
       ref(p.setEntitySimple).or(ref(p.setEntityInParens)));
     def(p.setEntityInParens, _keyword('(').seq(ref(p.setEntity)).seq(_keyword(')')));
     def(p.setIdentifier,
-      _keyword(r'$').
-      or(ref(p.integer)).
+      _keyword(r'$').seq(_keyword('_').optional()).seq(ref(p.integer)).
+      or(_keyword('1')).
+      or(_keyword(r'$')).
       or(ref(p.identifier)).
       or(ref(p.fieldrefInBrackets)));
     def(p.setOperator,
@@ -33,7 +35,41 @@ class QvExpGrammar extends CompositeParser {
       or(_keyword(r'-')).
       or(_keyword(r'*')).
       or(_keyword(r'/')));
+    def(p.setElement,
+      ref(p.number).
+      or(ref(p.str)).
+      or(ref(p.identifier)));
+    def(p.setElementList,
+        ref(p.setElement).separatedBy(_keyword(','), includeSeparators: false));
+    def(p.setElementSet,
+      ref(p.setElementFunction).
+      or(ref(p.identifier)).
+      or(_keyword('{').seq(ref(p.setElementList).optional()).seq(_keyword('}'))));
+    def(p.setElementSetInParens, _keyword('(').seq(ref(p.setElementSetExpression)).seq(_keyword(')')));
+    def(p.setElementSetPrimary,
+      ref(p.setElementSet).or(ref(p.setElementSetInParens)));
+    def(p.setElementSetExpression,
+      ref(p.setElementSetPrimary).separatedBy(ref(p.setOperator), includeSeparators: true));
 
+    def(p.setFieldSelection,
+      ref(p.identifier).or(ref(p.fieldrefInBrackets)).
+      seq(_keyword('=').
+          or(_keyword('-=')).
+          or(_keyword('+=')).
+          or(_keyword('*=')).
+          or(_keyword('/='))).
+      seq(ref(p.setElementSetExpression).optional()).
+      or(ref(p.identifier).or(ref(p.fieldrefInBrackets))));
+    def(p.setModifier,
+      _keyword('<').
+      seq(ref(p.setFieldSelection).separatedBy(_keyword(','), includeSeparators: false)).
+      seq(_keyword('>')));
+    def(p.setElementFunction,
+      _keyword('P').or(_keyword('E')).
+      seq(_keyword('(')).
+      seq(ref(p.setExpression)).
+      seq(ref(p.identifier).or(ref(p.fieldrefInBrackets)).optional()).
+      seq(_keyword(')')));
     
   }
 

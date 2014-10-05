@@ -47,22 +47,36 @@ void main() {
     });
   });
   group('Set analysis', () {
-    test('Simplest',() {
+    group('Set Identifiers', () {
+
+    test('{1}',() {
          shouldPass('{1}',p.setExpression);
      });
-    test('Non-integer numeric set identifier',() {
+    test('{1.3} (Should fail)',() {
          shouldFail('{1.3}',p.setExpression);
      });
-    test('Current selection set identifier',() {
+    test(r'{ $  }',() {
          shouldPass(r'{ $  }',p.setExpression);
      });
-    test('Bookmark set identifier',() {
+    test(r'{$_2}',() {
+         shouldPass(r'{$_2}',p.setExpression);
+     });
+    test(r'{$1}',() {
+         shouldPass(r'{$1}',p.setExpression);
+     });
+    skip_test(r'{Document\MyBookmark}',() {
+         shouldPass(r'{Document\MyBookmark}',p.setExpression);
+     });
+
+    test(r'{BM01}',() {
          shouldPass(r'{BM01}',p.setExpression);
      });
-    test('Alternate state identifier',() {
+    test(r'{[Alternate state1]}',() {
          shouldPass(r'{[Alternate state1]}',p.setExpression);
      });
-    test('Simple set operators',() {
+    });
+    group('Set operators', () {
+    test(r'{1-$}',() {
          shouldPass(r'{1-$}',p.setExpression);
      });
     test('Unexistent set operators',() {
@@ -75,9 +89,94 @@ void main() {
     test('Simple set operators with bookmark',() {
          shouldPass(r'{1-BM01-BM02}',p.setExpression);
      });
-    solo_test('Set operators with parens',() {
+    test('Set operators with parens',() {
          shouldPass(r'{1-(BM01+BM02)}',p.setExpression);
      });
+    test(r'{$*BM01}',() {
+         shouldPass(r'{$*BM01}',p.setExpression);
+     });
+    skip_test(r'{-($+BM01)}',() {
+         shouldPass(r'{-($+BM01)}',p.setExpression);
+     });
+    });
+    test('Set operators with simple set modifier',() {
+         shouldPass(r'{1 <OrderDate = DeliveryDate>}',p.setExpression);
+     });
+    test(r'{$ <Year = {2007, 2008}>}',() {
+         shouldPass(r'{$ <Year = {2007, 2008}>}',p.setExpression);
+     });
+    test(r'{$ <Year={2007,2008},Region={US}>}',() {
+         shouldPass(r'{$ <Year={2007,2008},Region={US}>}',p.setExpression);
+     });
+    test(r"{$ <[Sales Region]={'West coast', 'South America'}>}",() {
+         shouldPass(r"{$ <[Sales Region]={'West coast', 'South America'}>}",p.setExpression);
+     });
+    test(r"""{$ <Ingredient = {"*Garlic*"}>}""",() {
+         shouldPass(r"""{$ <Ingredient = {"*Garlic*"}>}""",p.setExpression);
+     });
+
+    test(r"""{$<Region = >} """,() {
+         shouldPass(r"""{$<Region = >} """,p.setExpression);
+     });
+    test(r"""{$<Region = {}>} """,() {
+         shouldPass(r"""{$<Region = {}>} """,p.setExpression);
+     });
+    test(r"""{$<Region>} """,() {
+         shouldPass(r"""{$<Region>} """,p.setExpression);
+     });
+    test(r"""{$<Year = {2000}, Region = {US, SE, DE, UK, FR}>} """,() {
+         shouldPass(r"""{$<Year = {2000}, Region = {US, SE, DE, UK, FR}>} """,p.setExpression);
+     });
+    test(r"""{$<Ingredient = {"*garlic*"}>} """,() {
+         shouldPass(r"""{$<Ingredient = {"*garlic*"}>} """,p.setExpression);
+     });
+    group('Set Modifiers with Set Operators', () {
+      test(r"""{$<Product = Product + {OurProduct1} - Product>}""",() {
+         shouldPass(r"""{$<Product = Product + {OurProduct1} - {OurProduct2}>}""",p.setExpression);
+       });
+      test(r"""{$<Year = Year + ({"20*",1997} - {2000})>}""",() {
+         shouldPass(r"""{$<Year = Year + ({"20*",1997} - {2000})>}""",p.setExpression);
+       });
+      test(r"""{$<Year = (Year + {"20*",1997}) - {2000} >}""",() {
+         shouldPass(r"""{$<Year = (Year + {"20*",1997}) - {2000} >}""",p.setExpression);
+       });
+      test(r"""{$<Year = {"*"} - {2000}, Product = {"*bearing*"} >} """,() {
+         shouldPass(r"""{$<Year = {"*"} - {2000}, Product = {"*bearing*"} >} """,p.setExpression);
+       });
+
+    });
+
+    group('Set Modifiers Using Assignments with Implicit Set Operators', () {
+      test(r"""{$<Product += {OurProduct1, OurProduct2} >}""",() {
+         shouldPass(r"""{$<Product += {OurProduct1, OurProduct2} >}""",p.setExpression);
+       });
+      test(r"""{$<Year += {"20*",1997} - {2000} >} """,() {
+         shouldPass(r"""{$<Year += {"20*",1997} - {2000} >} """,p.setExpression);
+       });
+      test(r"""{$<Product *= {OurProduct1} >} """,() {
+         shouldPass(r"""{$<Product *= {OurProduct1} >} """,p.setExpression);
+       });
+
+    });
+
+    group('Set Modifiers with Implicit Field Value Definitions', () {
+      test(r"""{$<Customer = P({1<Product={'Shoe'}>} Customer)>}""",() {
+         shouldPass(r"""{$<Customer = P({1<Product={'Shoe'}>} Customer)>}""",p.setExpression);
+       });
+      test(r"""{$<Customer = P({1<Product={'Shoe'}>})>}""",() {
+         shouldPass(r"""{$<Customer = P({1<Product={'Shoe'}>})>}""",p.setExpression);
+       });
+      test(r"""{$<Customer = P({1<Product={'Shoe'}>})>}""",() {
+         shouldPass(r"""{$<Customer = P({1<Product={'Shoe'}>})>}""",p.setExpression);
+       });
+      test(r"""{$<Customer = P({1<Product={Shoe}>} Supplier)>}""",() {
+         shouldPass(r"""{$<Customer = P({1<Product={Shoe}>} Supplier)>}""",p.setExpression);
+       });
+      test(r"""{$<Customer = E({1<Product={'Shoe'}>})>} """,() {
+         shouldPass(r"""{$<Customer = E({1<Product={'Shoe'}>})>}""",p.setExpression);
+       });
+
+    });
     
   });
 
