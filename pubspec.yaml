@@ -1,10 +1,11 @@
 name: qv_exp
-version: 0.1.0
+version: 0.1.1-dev
 author: Vadim Tsushko <vadimtsushko@gmail.com>
 description: A sample command-line application
 homepage: https://github.com/vadimtsushko/qv_exp
 dependencies:
   args: any
+  csv: any
   meta: any
   petitparser: any
 dev_dependencies:
