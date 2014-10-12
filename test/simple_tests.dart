@@ -8,18 +8,14 @@ import 'package:petitparser/petitparser.dart';
 var qvs = new QvExpParser();
 
 
-Result _parse(String source, String production) {
-  var parser = qvs[production].end();
-  return parser.parse(source);
-}
 
 shouldFail(String source, String production) {
-  Result res = _parse(source, production);
+  Result res = qvs.guarded_parse(production,source);
   expect(res.isFailure,isTrue);
 }
 
 shouldPass(String source, String production) {
-  Result res = _parse(source, production);
+  Result res = qvs.guarded_parse(production,source);
   String reason = '';
   expect(res.isSuccess,isTrue, reason: '"$source" did not parse as "$production". Message: ${res.message}. ${res.toPositionString()}' );
 }
@@ -27,24 +23,32 @@ shouldPass(String source, String production) {
 void main() {
   group('Simple expressions', () {
     test('Simple numbers',() {
-         shouldPass('1+3',p.start);
-     });
+      shouldPass('1+3',p.start);
+    });
     test('Simple expressions with parens',() {
-         shouldPass('1+3-( 4 + 2)',p.start);
-     });
+      shouldPass('1+3-( 4 + 2)',p.start);
+    });
     test('Simple expressions with parens and fieldNames',() {
-         shouldPass('1+field2-( 4 + 2)',p.start);
-     });
+      shouldPass('1+field2-( 4 + 2)',p.start);
+    });
 
     test('Simple function',() {
-         shouldPass('RangeSum(2,4)',p.start);
-     });
+      shouldPass('RangeSum(2,4)',p.start);
+    });
     test('Simple function with skipped value',() {
-         shouldFail('RangeSum(,4)',p.start);
+      shouldFail('RangeSum(,4)',p.start);
     });
-    skip_test('Simple function invalid name',() {
-         shouldFail('RangeSum1(3,4)',p.start);
+    test('Simple function invalid name',() {
+      shouldFail('RangeSum1(3,4)',p.start);
     });
+    test('Set expression in function not supporting set expressions: acos({1} 3)',() {
+      shouldFail('acos({1} 3)',p.start);
+    });
+    test('Wrong cardinality in built-in function: acos(1,3)',() {
+      shouldFail('acos(1,3)',p.start);
+    });
+
+    
   });
   group('Set analysis', () {
     group('Set Identifiers', () {
