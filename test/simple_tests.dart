@@ -10,12 +10,12 @@ var qvs = new QvExpParser();
 
 
 shouldFail(String source, String production) {
-  Result res = qvs.guarded_parse(production,source);
+  Result res = qvs.guarded_parse(source, production);
   expect(res.isFailure,isTrue);
 }
 
 shouldPass(String source, String production) {
-  Result res = qvs.guarded_parse(production,source);
+  Result res = qvs.guarded_parse(source,production);
   String reason = '';
   expect(res.isSuccess,isTrue, reason: '"$source" did not parse as "$production". Message: ${res.message}. ${res.toPositionString()}' );
 }
@@ -41,14 +41,16 @@ void main() {
     test('Simple function invalid name',() {
       shouldFail('RangeSum1(3,4)',p.start);
     });
+    test('Simple function, number without leading zero: if(x > .8, 2)',() {
+      shouldPass('if(x > .8, 2)',p.start);
+    });
+
     test('Set expression in function not supporting set expressions: acos({1} 3)',() {
       shouldFail('acos({1} 3)',p.start);
     });
     test('Wrong cardinality in built-in function: acos(1,3)',() {
       shouldFail('acos(1,3)',p.start);
     });
-
-    
   });
   group('Set analysis', () {
     group('Set Identifiers', () {
@@ -106,12 +108,20 @@ void main() {
     test('Set operators with simple set modifier',() {
          shouldPass(r'{1 <OrderDate = DeliveryDate>}',p.setExpression);
      });
+    test('Simple set modifier with implicit set identifier',() {
+         shouldPass(r'{<OrderDate = DeliveryDate>}',p.setExpression);
+     });
+
     test(r'{$ <Year = {2007, 2008}>}',() {
          shouldPass(r'{$ <Year = {2007, 2008}>}',p.setExpression);
      });
     test(r'{$ <Year={2007,2008},Region={US}>}',() {
          shouldPass(r'{$ <Year={2007,2008},Region={US}>}',p.setExpression);
      });
+    test(r'{1<Year={2007,2008},Region={US} >}',() {
+         shouldPass(r'{$ <Year={2007,2008},Region={US} >}',p.setExpression);
+     });
+
     test(r"{$ <[Sales Region]={'West coast', 'South America'}>}",() {
          shouldPass(r"{$ <[Sales Region]={'West coast', 'South America'}>}",p.setExpression);
      });
@@ -197,9 +207,13 @@ void main() {
          shouldPass(r"""sum(Price*Quantity)""",p.expression);
      });
 
+    solo_test(r"""COUNT(DISTINCT {1<_ФлагДействующаяДата=>} Дата)""",() {
+         shouldPass(r"""COUNT({1<_ФлагДействующаяДат={1}>} DISTINCT Дата)""",p.expression);
+     });
     test(r"""sum(distinct Price)""",() {
          shouldPass(r"""sum(distinct Price)""",p.expression);
-     });
+   });
+
     test(r"""sum(Sales)/sum(total Sales) """,() {
          shouldPass(r"""sum(Sales)/sum(total Sales) """,p.expression);
      });
@@ -228,8 +242,40 @@ void main() {
     test(r"""firstsortedvalue ( total <Grp> PurchasedArticle, OrderDate )""",() {
          shouldPass(r"""firstsortedvalue ( total <Grp> PurchasedArticle, OrderDate )""",p.expression);
      });
-    
+  });
+
+  group('Samples from codebase: ', (){
+    test(r"""Money(Sum({<_ФлагДействующаяДата={1},ТипДокумента={13},ТипПериода={'Current'}>} Сумма),'# ##0,00')""",() {
+         shouldPass(r"""Money(Sum({<_ФлагДействующаяДата={1},ТипДокумента={13},ТипПериода={'Current'}>} Сумма),'# ##0,00')""",p.start);
+     });
+    skip_test(r"""Money(Sum({<_ФлагДействующаяДата={1},ТипДокумента={13},ТипПериода={'Current'}>} Сумма),'# ##0,00')""",() {
+         shouldPass(r"""if (Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') = 0 OR IsNull(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%')), null(), 'qmem://<builtin>/' & if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 1.20,'Arrow_N_G.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 1.051,'Arrow_NE_G.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 1.05 ,'Arrow_NE_G.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 1,'Arrow_E_Y.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= .95 ,'Arrow_W_Y.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= .801  ,'Arrow_SE_R.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= .80 ,'Arrow_S_R.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 0 ,'Arrow_S_R.png','Arrow_S_R.png') ))))))))""",p.start);
+     });
+    test(r"""Some expression from codebase""",() {
+         shouldPass(r"""if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1},ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= .80 ,'Arrow_S_R.png')""",p.start);
+     });
+    test(r"""$(=Only(OperationType) = 'Sales')""",() {
+      shouldPass(r"""$(=Only(OperationType) = 'Sales')""",p.start);
+    });
+    test(r"""Num($($(=If(InMonth(Only(ГодМесяц),1313,0),'Оборачиваемость30','ОборачиваемостьМесяц'))))""",() {
+      shouldPass(r"""Num($($(=If(InMonth(Only(ГодМесяц),1313,0),'Оборачиваемость30','ОборачиваемостьМесяц'))))""",p.start);
+    });
+
+    test(r"""If(IsNull(Only({<ГП_$1={$2}>}  _ГП_$1_ФорматМлрд)),'трн','мрд')""",() {
+      shouldPass(r"""If(IsNull(Only({<ГП_$1={$2}>}  _ГП_$1_ФорматМлрд)),'трн','мрд')""",p.start);
+    });
+
+    test(r"""Only({<ГП_$1={$(=chr(39) & Only({<ГП_ТипПоказателя={ПредГод}>} _ГП_ТипПоказателя) & chr(39))}>}  _ГП_$1)""",() {
+      shouldPass(r"""Only({<ГП_$1={$(=chr(39) & Only({<ГП_ТипПоказателя={ПредГод}>} _ГП_ТипПоказателя) & chr(39))}>}  _ГП_$1)""",p.start);
+    });
+
+    test(r"""$(=if(_ГруппаПоказателей_План='% изм. План-Факт' or _ГруппаПоказателей_План='% изм. к пред (-1) год' or _ГруппаПоказателей_План='% изм. к пред (-2) год' or _ГруппаПоказателей_План='% изм. к пред (-1) месяц' ,0.8,0))""",() {
+      shouldPass(r"""$(=if(_ГруппаПоказателей_План='% изм. План-Факт' or _ГруппаПоказателей_План='% изм. к пред (-1) год' or _ГруппаПоказателей_План='% изм. к пред (-2) год' or _ГруппаПоказателей_План='% изм. к пред (-1) месяц' ,0.8,0))""",p.start);
+    });
+    test(r"""Num($($(=If(InMonth(Only(ГодМесяц),1313,0),'Оборачиваемость30','ОборачиваемостьМесяц')))""",() {
+      shouldPass(r"""Num($($(=If(InMonth(Only(ГодМесяц),1313,0),'Оборачиваемость30','ОборачиваемостьМесяц'))))""",p.start);
+    });
+
     
   });
-  
 }

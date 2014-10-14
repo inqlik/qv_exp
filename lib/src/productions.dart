@@ -22,6 +22,7 @@ const String scaledDecimal = 'scaledDecimal';
 const String scaledMantissa = 'scaledMantissa';
 const String fractionalDigits = 'fractionalDigits';
 const String expression = 'expression';
+const String macroExpression = 'macroExpression';
 const String primaryExpression = 'primaryExpression';
 const String binaryExpression = 'binaryExpression';
 const String binaryPart = 'binaryPart';

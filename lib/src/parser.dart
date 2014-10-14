@@ -72,7 +72,7 @@ class QvExpParser extends QvExpGrammar {
   void qv_action(String name, Function function) {
     redef(name, (parser) => new QvActionParser(parser, function));
   }
-  Result guarded_parse(String production,String source) {
+  Result guarded_parse(String source, [String production = 'start']) {
     Result res;
     var parser = this[production].end();
     try {
@@ -86,12 +86,17 @@ class QvExpParser extends QvExpGrammar {
     }
     return res;
   }
+  Result unguarded_parse(String source, [String production = 'start']) {
+    Result res;
+    var parser = this[production].end();
+    return res = parser.parse(source);
+  }
 
   void initialize() {
     super.initialize();
 
     qv_action(p.function, (Result result, int savedPosition) {
-      print(result.value);
+//      print(result.value);
       String funcName = result.value[0];
       List<String> params = result.value[5];
       if (!BUILT_IN_FUNCTIONS.containsKey(funcName.toUpperCase())) {
@@ -103,10 +108,14 @@ class QvExpParser extends QvExpGrammar {
            throw result.failure("Set expression is prohibited in function `$funcName`", savedPosition);
          }
       }
-      if (funcDesc.minCardinality > params.length) {
+      int actualCardinality = 0;
+      if (params != null) {
+        actualCardinality = params.length;
+      }
+      if (funcDesc.minCardinality > actualCardinality) {
         throw result.failure("Function `$funcName` should have no less then ${funcDesc.minCardinality} params. Actual param number is ${params.length}", savedPosition);        
       }
-      if (funcDesc.maxCardinality < params.length) {
+      if (funcDesc.maxCardinality < actualCardinality) {
         throw result.failure("Function `$funcName` should have no more then ${funcDesc.maxCardinality} params. Actual param number is ${params.length}", savedPosition);        
       }
 

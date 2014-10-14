@@ -6,7 +6,8 @@ class FuncDesc {
   final int minCardinality;
   final int maxCardinality;
   final bool isDistinctPossible;
-  const FuncDesc(this.name,this.isSetExpressionPossible,this.minCardinality,this.maxCardinality,{this.isDistinctPossible: false});
+  final bool isTotalPossible;
+  const FuncDesc(this.name,this.isSetExpressionPossible,this.minCardinality,this.maxCardinality,{this.isDistinctPossible: false, this.isTotalPossible:false});
 }
 
   
@@ -28,7 +29,8 @@ class QvExpGrammar extends CompositeParser {
       ref(p.setEntityPrimary).separatedBy(ref(p.setOperator), includeSeparators: true));
     def(p.setEntitySimple,
       ref(p.setIdentifier).
-      seq(ref(p.setModifier).optional()));
+      seq(ref(p.setModifier).optional()).
+      or(ref(p.setModifier)));
     def(p.setEntityPrimary,
       ref(p.setEntitySimple).or(ref(p.setEntityInParens)));
     def(p.setEntityInParens, _keyword('(').seq(ref(p.setEntity)).seq(_keyword(')')));
@@ -46,6 +48,7 @@ class QvExpGrammar extends CompositeParser {
     def(p.setElement,
       ref(p.number).
       or(ref(p.str)).
+      or(ref(p.macroExpression)).
       or(ref(p.identifier)));
     def(p.setElementList,
         ref(p.setElement).separatedBy(_keyword(','), includeSeparators: false));
@@ -128,8 +131,18 @@ class QvExpGrammar extends CompositeParser {
  
   _expression() {
     def(p.expression,
-        ref(p.binaryExpression).trim(trimmer)
-        );   
+        string(r'$($(=').
+        seq(ref(p.binaryExpression)).
+        seq(_keyword(')').seq(_keyword(')'))).
+        or(ref(p.macroExpression)).
+        or(ref(p.binaryExpression).trim(trimmer))
+        );
+    def(p.macroExpression,
+        string(r'$(=').
+        seq(ref(p.binaryExpression)).
+        seq(_keyword(')'))
+        );
+    
     def(p.primaryExpression,
         ref(p.str)
         .or(ref(p.unaryExpression))
@@ -145,7 +158,7 @@ class QvExpGrammar extends CompositeParser {
     def(p.fieldName,
           _keyword(ref(p.identifier)
           .or(ref(p.fieldrefInBrackets))));
-    def(p.identifier,letter().or(anyIn('_%@').or(localLetter()))
+    def(p.identifier,letter().or(anyIn(r'_%@$').or(localLetter()))
         .seq(word().or(anyIn('.%')).or(char('_')).or(localLetter().or(char(r'$'))).plus())
         .or(letter())
 //        .seq(whitespace().star().seq(char('(')).not())
@@ -230,6 +243,7 @@ class QvExpGrammar extends CompositeParser {
         .seq(ref(p.positiveNumber)).flatten());
     def(p.positiveNumber, ref(p.scaledDecimal)
         .or(ref(p.float))
+        .or(char('.').seq(ref(p.digits)))
         .or(ref(p.integer)));
 
     def(p.integer, ref(p.radixInteger)
@@ -264,12 +278,14 @@ class QvExpGrammar extends CompositeParser {
 }
 
 const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
+  'ABOVE':const FuncDesc('ABOVE',false,1,3,isTotalPossible:true),
+  'AFTER':const FuncDesc('AFTER',false,1,3,isTotalPossible:true),
   'ACOS':const FuncDesc('ACOS',false,1,1),
   'ADDMONTHS':const FuncDesc('ADDMONTHS',false,2,3),
   'ADDYEARS':const FuncDesc('ADDYEARS',true,0,999),
   'AGE':const FuncDesc('AGE',true,0,999),
   'AGGR':const FuncDesc('AGGR',true,2,999),
-  'ALT':const FuncDesc('ALT',true,0,999),
+  'ALT':const FuncDesc('ALT',false,2,999),
   'APPLYCODEPAGE':const FuncDesc('APPLYCODEPAGE',true,0,999),
   'APPLYMAP':const FuncDesc('APPLYMAP',true,0,999),
   'ARGB':const FuncDesc('ARGB',true,0,999),
@@ -282,10 +298,13 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'AUTONUMBERHASH128':const FuncDesc('AUTONUMBERHASH128',true,0,999),
   'AUTONUMBERHASH256':const FuncDesc('AUTONUMBERHASH256',true,0,999),
   'AVG':const FuncDesc('AVG',true,0,999),
+  'BEFORE':const FuncDesc('BEFORE',false,1,3,isTotalPossible:true), 
+  'BELOW':const FuncDesc('BELOW',false,1,3,isTotalPossible:true),
   'BITCOUNT':const FuncDesc('BITCOUNT',false,1,1),
   'BLACK':const FuncDesc('BLACK',true,0,999),
   'BLACKANDSCHOLE':const FuncDesc('BLACKANDSCHOLE',true,0,999),
   'BLUE':const FuncDesc('BLUE',true,0,999),
+  'BOTTOM':const FuncDesc('BOTTOM',false,1,3,isTotalPossible:true),  
   'BROWN':const FuncDesc('BROWN',true,0,999),
   'CAPITALIZE':const FuncDesc('CAPITALIZE',true,0,999),
   'CEIL':const FuncDesc('CEIL',false,1,3),
@@ -295,15 +314,17 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'CHIDIST':const FuncDesc('CHIDIST',true,0,999),
   'CHIINV':const FuncDesc('CHIINV',true,0,999),
   'CHR':const FuncDesc('CHR',true,0,999),
-  'CLASS':const FuncDesc('CLASS',true,0,999),
-  'CLIENTPLATFORM':const FuncDesc('CLIENTPLATFORM',true,0,999),
+  'CLASS':const FuncDesc('CLASS',false,2,4),
+  'CLIENTPLATFORM':const FuncDesc('CLIENTPLATFORM',false,0,0),
   'COLOR':const FuncDesc('COLOR',true,0,999),
   'COLORMAPHUE':const FuncDesc('COLORMAPHUE',true,0,999),
   'COLORMAPJET':const FuncDesc('COLORMAPJET',true,0,999),
   'COLORMIX1':const FuncDesc('COLORMIX1',true,0,999),
   'COLORMIX2':const FuncDesc('COLORMIX2',true,0,999),
+  'COLUMN':const FuncDesc('COLUMN',false,1,1),
+  'COLUMNNO':const FuncDesc('COLUMNNO',false,0,0,isTotalPossible:true),
   'COMBIN':const FuncDesc('COMBIN',false,2,2),
-  'COMPUTERNAME':const FuncDesc('COMPUTERNAME',true,0,999),
+  'COMPUTERNAME':const FuncDesc('COMPUTERNAME',false,0,0),
   'CONCAT':const FuncDesc('CONCAT',true,1,3,isDistinctPossible:true),
   'CONNECTSTRING':const FuncDesc('CONNECTSTRING',true,0,999),
   'CONVERTTOLOCALTIME':const FuncDesc('CONVERTTOLOCALTIME',true,0,999),
@@ -313,7 +334,7 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'COUNT':const FuncDesc('COUNT',true,1,1,isDistinctPossible:true),
   'CYAN':const FuncDesc('CYAN',true,0,999),
   'DARKGRAY':const FuncDesc('DARKGRAY',true,0,999),
-  'DATE#':const FuncDesc('DATE#',true,0,999),
+  'DATE#':const FuncDesc('DATE#',false,1,2),
   'DATE':const FuncDesc('DATE',true,0,999),
   'DAY':const FuncDesc('DAY',true,0,999),
   'DAYEND':const FuncDesc('DAYEND',true,0,999),
@@ -323,6 +344,7 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'DAYNUMBEROFYEAR':const FuncDesc('DAYNUMBEROFYEAR',true,0,999),
   'DAYSTART':const FuncDesc('DAYSTART',true,0,999),
   'DIV':const FuncDesc('DIV',false,2,2),
+  'DIMENSIONALITY':const FuncDesc('DIMENSIONALITY',false,0,0),
   'DOCUMENTNAME':const FuncDesc('DOCUMENTNAME',true,0,999),
   'DOCUMENTPATH':const FuncDesc('DOCUMENTPATH',true,0,999),
   'DOCUMENTTITLE':const FuncDesc('DOCUMENTTITLE',true,0,999),
@@ -336,11 +358,11 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'FACT':const FuncDesc('FACT',false,1,1),
   'FALSE':const FuncDesc('FALSE',true,0,999),
   'FDIST':const FuncDesc('FDIST',true,0,999),
-  'FIELDINDEX':const FuncDesc('FIELDINDEX',true,0,999),
+  'FIELDINDEX':const FuncDesc('FIELDINDEX',false,2,2),
   'FIELDNAME':const FuncDesc('FIELDNAME',true,0,999),
   'FIELDNUMBER':const FuncDesc('FIELDNUMBER',true,0,999),
-  'FIELDVALUE':const FuncDesc('FIELDVALUE',true,0,999),
-  'FIELDVALUECOUNT':const FuncDesc('FIELDVALUECOUNT',true,0,999),
+  'FIELDVALUE':const FuncDesc('FIELDVALUE',false,2,2),
+  'FIELDVALUECOUNT':const FuncDesc('FIELDVALUECOUNT',false,1,1),
   'FILEBASENAME':const FuncDesc('FILEBASENAME',true,0,999),
   'FILEDIR':const FuncDesc('FILEDIR',true,0,999),
   'FILEEXTENSION':const FuncDesc('FILEEXTENSION',true,0,999),
@@ -350,6 +372,7 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'FILETIME':const FuncDesc('FILETIME',true,0,999),
   'FINDONEOF':const FuncDesc('FINDONEOF',true,0,999),
   'FINV':const FuncDesc('FINV',true,0,999),
+  'FIRST':const FuncDesc('FIRST',false,1,3,isTotalPossible:true),
   'FIRSTSORTEDVALUE':const FuncDesc('FIRSTSORTEDVALUE',true,1,3,isDistinctPossible:true),
   'FIRSTVALUE':const FuncDesc('FIRSTVALUE',true,1,1),
   'FIRSTWORKDATE':const FuncDesc('FIRSTWORKDATE',true,0,999),
@@ -358,9 +381,17 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'FRAC':const FuncDesc('FRAC',false,1,1),
   'FRACTILE':const FuncDesc('FRACTILE',true,0,999),
   'FV':const FuncDesc('FV',true,0,999),
+  'GETACTIVESHEETID':const FuncDesc('GETACTIVESHEETID',false,0,0),
+  'GETALTERNATIVECOUNT':const FuncDesc('GETALTERNATIVECOUNT',false,1,1),
+  'GETEXCLUDEDCOUNT':const FuncDesc('GETEXCLUDEDCOUNT',false,1,1),
   'GETEXTENDEDPROPERTY':const FuncDesc('GETEXTENDEDPROPERTY',true,0,999),
-  'GETFOLDERPATH':const FuncDesc('GETFOLDERPATH',true,0,999),
+  'GETCURRENTFIELD':const FuncDesc('GETCURRENTFIELD',false,1,1),
+  'GETCURRENTSELECTIONS':const FuncDesc('GETCURRENTSELECTIONS',false,0,4),  
+  'GETFIELDSELECTIONS':const FuncDesc('GETFIELDSELECTIONS',false,1,3),
+  'GETNOTSELECTEDCOUNT':const FuncDesc('GETNOTSELECTEDCOUNT',false,1,2),
   'GETOBJECTFIELD':const FuncDesc('GETOBJECTFIELD',true,0,999),
+  'GETPOSSIBLECOUNT':const FuncDesc('GETPOSSIBLECOUNT',false,1,1),
+  'GETSELECTEDCOUNT':const FuncDesc('GETSELECTEDCOUNT',false,1,2),
   'GETREGISTRYSTRING':const FuncDesc('GETREGISTRYSTRING',true,0,999),
   'GMT':const FuncDesc('GMT',true,0,999),
   'GREEN':const FuncDesc('GREEN',true,0,999),
@@ -368,8 +399,9 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'HASH160':const FuncDesc('HASH160',true,0,999),
   'HASH256':const FuncDesc('HASH256',true,0,999),
   'HOUR':const FuncDesc('HOUR',true,0,999),
+  'HRANK':const FuncDesc('HRANK',false,1,3,isTotalPossible:true),
   'HSL':const FuncDesc('HSL',true,0,999),
-  'IF':const FuncDesc('IF',true,0,999),
+  'IF':const FuncDesc('IF',false,2,3),
   'INDAY':const FuncDesc('INDAY',true,0,999),
   'INDAYTOTIME':const FuncDesc('INDAYTOTIME',true,0,999),
   'INDEX':const FuncDesc('INDEX',true,0,999),
@@ -385,19 +417,20 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'INQUARTER':const FuncDesc('INQUARTER',true,0,999),
   'INQUARTERTODATE':const FuncDesc('INQUARTERTODATE',true,0,999),
   'INTERVAL':const FuncDesc('INTERVAL',true,0,999),
-  'INTERVAL#':const FuncDesc('INTERVAL#',true,0,999),
+  'INTERVAL#':const FuncDesc('INTERVAL#',false,1,2),
   'INWEEK':const FuncDesc('INWEEK',true,0,999),
   'INWEEKTODATE':const FuncDesc('INWEEKTODATE',true,0,999),
   'INYEAR':const FuncDesc('INYEAR',true,0,999),
   'INYEARTODATE':const FuncDesc('INYEARTODATE',true,0,999),
   'IRR':const FuncDesc('IRR',true,0,999),
-  'ISNULL':const FuncDesc('ISNULL',true,0,999),
-  'ISNUM':const FuncDesc('ISNUM',true,0,999),
-  'ISPARTIALRELOAD':const FuncDesc('ISPARTIALRELOAD',true,0,999),
-  'ISTEXT':const FuncDesc('ISTEXT',true,0,999),
+  'ISNULL':const FuncDesc('ISNULL',false,1,1),
+  'ISNUM':const FuncDesc('ISNUM',false,1,1),
+  'ISPARTIALRELOAD':const FuncDesc('ISPARTIALRELOAD',false,0,0),
+  'ISTEXT':const FuncDesc('ISTEXT',false,1,1),
   'ITERNO':const FuncDesc('ITERNO',true,0,999),
   'KEEPCHAR':const FuncDesc('KEEPCHAR',true,0,999),
   'KURTOSIS':const FuncDesc('KURTOSIS',true,0,999),
+  'LAST':const FuncDesc('LAST',false,1,3,isTotalPossible:true),
   'LASTVALUE':const FuncDesc('LASTVALUE',true,1,1),
   'LASTWORKDATE':const FuncDesc('LASTWORKDATE',true,0,999),
   'LEN':const FuncDesc('LEN',true,0,999),
@@ -431,7 +464,7 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'MAKETIME':const FuncDesc('MAKETIME',true,0,999),
   'MAKEWEEKDATE':const FuncDesc('MAKEWEEKDATE',true,0,999),
   'MAPSUBSTRING':const FuncDesc('MAPSUBSTRING',true,0,999),
-  'MATCH':const FuncDesc('MATCH',true,0,999),
+  'MATCH':const FuncDesc('MATCH',false,2,999),
   'MAX':const FuncDesc('MAX',true,1,2),
   'MAXSTRING':const FuncDesc('MAXSTRING',true,1,1),
   'MEDIAN':const FuncDesc('MEDIAN',true,0,999),
@@ -440,11 +473,11 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'MINSTRING':const FuncDesc('MINSTRING',true,1,1),
   'MINUTE':const FuncDesc('MINUTE',true,0,999),
   'MISSINGCOUNT':const FuncDesc('MISSINGCOUNT',true,1,1,isDistinctPossible:true),
-  'MIXMATCH':const FuncDesc('MIXMATCH',true,0,999),
+  'MIXMATCH':const FuncDesc('MIXMATCH',false,2,999),
   'MOD':const FuncDesc('MOD',false,2,2),
   'MODE':const FuncDesc('MODE',true,1,1),
   'MONEY':const FuncDesc('MONEY',true,0,999),
-  'MONEY#':const FuncDesc('MONEY#',true,0,999),
+  'MONEY#':const FuncDesc('MONEY#',false,1,4),
   'MONTH':const FuncDesc('MONTH',true,0,999),
   'MONTHEND':const FuncDesc('MONTHEND',true,0,999),
   'MONTHNAME':const FuncDesc('MONTHNAME',true,0,999),
@@ -454,19 +487,20 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'MONTHSTART':const FuncDesc('MONTHSTART',true,0,999),
   'MSGBOX':const FuncDesc('MSGBOX',true,0,999),
   'NETWORKDAYS':const FuncDesc('NETWORKDAYS',true,0,999),
+  'NOOFCOLUMNS':const FuncDesc('NOOFCOLUMNS',false,0,0,isTotalPossible:true),
   'NOOFFIELDS':const FuncDesc('NOOFFIELDS',true,0,999),
   'NOOFREPORTS':const FuncDesc('NOOFREPORTS',true,0,999),
-  'NOOFROWS':const FuncDesc('NOOFROWS',true,0,999),
+  'NOOFROWS':const FuncDesc('NOOFROWS',false,0,0,isTotalPossible:true),
   'NOOFTABLES':const FuncDesc('NOOFTABLES',true,0,999),
   'NORMDIST':const FuncDesc('NORMDIST',true,0,999),
   'NORMINV':const FuncDesc('NORMINV',true,0,999),
   'NOW':const FuncDesc('NOW',true,0,999),
   'NPER':const FuncDesc('NPER',true,0,999),
   'NPV':const FuncDesc('NPV',true,0,999),
-  'NULL':const FuncDesc('NULL',true,0,0),
+  'NULL':const FuncDesc('NULL',false,0,0),
   'NULLCOUNT':const FuncDesc('NULLCOUNT',true,1,1,isDistinctPossible:true),
   'NUM':const FuncDesc('NUM',true,0,999),
-  'NUM#':const FuncDesc('NUM#',true,0,999),
+  'NUM#':const FuncDesc('NUM#',false,1,4),
   'NUMAVG':const FuncDesc('NUMAVG',false,1,999),
   'NUMCOUNT':const FuncDesc('NUMCOUNT',false,1,999),
   'NUMERICCOUNT':const FuncDesc('NUMERICCOUNT',true,1,1,isDistinctPossible:true),
@@ -476,11 +510,11 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'ODD':const FuncDesc('ODD',false,1,1),
   'ONLY':const FuncDesc('ONLY',true,1,1),
   'ORD':const FuncDesc('ORD',true,0,999),
-  'OSUSER':const FuncDesc('OSUSER',true,0,999),
+  'OSUSER':const FuncDesc('OSUSER',false,0,0),
   'PEEK':const FuncDesc('PEEK',true,0,999),
   'PERMUT':const FuncDesc('PERMUT',false,2,2),
   'PI':const FuncDesc('PI',true,0,999),
-  'PICK':const FuncDesc('PICK',true,0,999),
+  'PICK':const FuncDesc('PICK',false,2,999),
   'PMT':const FuncDesc('PMT',true,0,999),
   'POW':const FuncDesc('POW',true,0,999),
   'PREVIOUS':const FuncDesc('PREVIOUS',true,0,999),
@@ -488,7 +522,7 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'PV':const FuncDesc('PV',true,0,999),
   'QLIKTECHBLUE':const FuncDesc('QLIKTECHBLUE',true,0,999),
   'QLIKTECHGRAY':const FuncDesc('QLIKTECHGRAY',true,0,999),
-  'QLIKVIEWVERSION':const FuncDesc('QLIKVIEWVERSION',true,0,999),
+  'QLIKVIEWVERSION':const FuncDesc('QLIKVIEWVERSION',false,0,0),
   'QUARTEREND':const FuncDesc('QUARTEREND',true,0,999),
   'QUARTERNAME':const FuncDesc('QUARTERNAME',true,0,999),
   'QUARTERSTART':const FuncDesc('QUARTERSTART',true,0,999),
@@ -521,10 +555,11 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'RANGETEXTCOUNT':const FuncDesc('RANGETEXTCOUNT',false,1,999),
   'RANGEXIRR':const FuncDesc('RANGEXIRR',false,1,999),
   'RANGEXNPV':const FuncDesc('RANGEXNPV',false,1,999),
+  'RANK':const FuncDesc('RANK',false,1,3,isTotalPossible:true),
   'RATE':const FuncDesc('RATE',true,0,999),
   'RECNO':const FuncDesc('RECNO',true,0,999),
   'RED':const FuncDesc('RED',true,0,999),
-  'RELOADTIME':const FuncDesc('RELOADTIME',true,0,999),
+  'RELOADTIME':const FuncDesc('RELOADTIME',false,0,0),
   'REPEAT':const FuncDesc('REPEAT',true,0,999),
   'REPLACE':const FuncDesc('REPLACE',true,0,999),
   'REPORTCOMMENT':const FuncDesc('REPORTCOMMENT',true,0,999),
@@ -534,9 +569,10 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'RGB':const FuncDesc('RGB',true,0,999),
   'RIGHT':const FuncDesc('RIGHT',true,0,999),
   'ROUND':const FuncDesc('ROUND',false,1,3),
-  'ROWNO':const FuncDesc('ROWNO',true,0,999),
+  'ROWNO':const FuncDesc('ROWNO',false,0,0,isTotalPossible:true),
   'RTRIM':const FuncDesc('RTRIM',true,0,999),
   'SECOND':const FuncDesc('SECOND',true,0,999),
+  'SECONDARYDIMENSIONALITY':const FuncDesc('SECONDARYDIMENSIONALITY',false,0,0),
   'SETDATEYEAR':const FuncDesc('SETDATEYEAR',true,0,999),
   'SETDATEYEARMONTH':const FuncDesc('SETDATEYEARMONTH',true,0,999),
   'SIGN':const FuncDesc('SIGN',false,1,1),
@@ -557,16 +593,17 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'TAN':const FuncDesc('TAN',true,0,999),
   'TANH':const FuncDesc('TANH',true,0,999),
   'TDIST':const FuncDesc('TDIST',true,0,999),
-  'TEXT':const FuncDesc('TEXT',true,0,999),
+  'TEXT':const FuncDesc('TEXT',false,1,1),
   'TEXTBETWEEN':const FuncDesc('TEXTBETWEEN',true,0,999),
   'TEXTCOUNT':const FuncDesc('TEXTCOUNT',true,1,1,isDistinctPossible:true),
   'TIME':const FuncDesc('TIME',true,0,999),
-  'TIME#':const FuncDesc('TIME#',true,0,999),
-  'TIMESTAMP':const FuncDesc('TIMESTAMP',true,0,999),
-  'TIMESTAMP#':const FuncDesc('TIMESTAMP#',true,0,999),
+  'TIME#':const FuncDesc('TIME#',false,1,2),
+  'TIMESTAMP':const FuncDesc('TIMESTAMP',false,1,2),
+  'TIMESTAMP#':const FuncDesc('TIMESTAMP#',false,1,2),
   'TIMEZONE':const FuncDesc('TIMEZONE',true,0,999),
   'TINV':const FuncDesc('TINV',true,0,999),
   'TODAY':const FuncDesc('TODAY',true,0,999),
+  'TOP':const FuncDesc('TOP',false,1,3,isTotalPossible:true),  
   'TRIM':const FuncDesc('TRIM',true,0,999),
   'true':const FuncDesc('true',true,0,999),
   'TTEST1_CONF':const FuncDesc('TTEST1_CONF',true,0,999),
@@ -603,6 +640,7 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'TTESTW_UPPER':const FuncDesc('TTESTW_UPPER',true,0,999),
   'UPPER':const FuncDesc('UPPER',true,0,999),
   'UTC':const FuncDesc('UTC',true,0,999),
+  'VRANK':const FuncDesc('VRANK',false,1,3,isTotalPossible:true),
   'WEEK':const FuncDesc('WEEK',true,0,999),
   'WEEKDAY':const FuncDesc('WEEKDAY',true,0,999),
   'WEEKEND':const FuncDesc('WEEKEND',true,0,999),
@@ -610,7 +648,7 @@ const Map<String, FuncDesc> BUILT_IN_FUNCTIONS = const <String, FuncDesc>{
   'WEEKSTART':const FuncDesc('WEEKSTART',true,0,999),
   'WEEKYEAR':const FuncDesc('WEEKYEAR',true,0,999),
   'WHITE':const FuncDesc('WHITE',true,0,999),
-  'WILDMATCH':const FuncDesc('WILDMATCH',true,0,999),
+  'WILDMATCH':const FuncDesc('WILDMATCH',false,2,999),
   'WILDMATCH5':const FuncDesc('WILDMATCH5',true,0,999),
   'XIRR':const FuncDesc('XIRR',true,0,999),
   'XNPV':const FuncDesc('XNPV',true,0,999),
