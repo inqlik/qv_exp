@@ -100,10 +100,17 @@ class QvExpGrammar extends CompositeParser {
     def(p.totalClause,
         _keyword('TOTAL')
         .seq(ref(p.totalModifier).optional()));
+    def(p.distinctClause,
+        _keyword('NODISTINCT')
+        .or(_keyword('DISTINCT')));
     def(p.totalModifier,
         _keyword('<')
         .seq(ref(p.fieldName).separatedBy(char(',').trim(trimmer), includeSeparators: false))
         .seq(_keyword('>')));
+    def(p.functionModifier,
+        ref(p.distinctClause)
+        .or(ref(p.totalClause)
+        .or(ref(p.setExpression))));
     def(p.paramsOptional,
         ref(p.expression).optional().separatedBy(char(',').trim(trimmer), includeSeparators: false));
     def(p.parens,
@@ -187,9 +194,9 @@ class QvExpGrammar extends CompositeParser {
         .seq(word().or(char('#')).plus()).flatten()
         .trim(trimmer)
         .seq(char('(').trim(trimmer))
-        .seq(ref(p.setExpression).optional())
-        .seq(_keyword('DISTINCT').optional())
-        .seq(ref(p.totalClause).optional())
+        .seq(ref(p.functionModifier).optional())
+        .seq(ref(p.functionModifier).optional())
+        .seq(ref(p.functionModifier).optional())
         .seq(ref(p.params).optional())
         .seq(char(')').trim(trimmer)));
     def(p.userFunction,
@@ -203,7 +210,7 @@ class QvExpGrammar extends CompositeParser {
                 .seq(ref(p.userFunction))
                 .seq(_keyword(')').trim(trimmer)));
     def(p.unaryExpression,
-        _word('NOT').or(_keyword('-').or(_word('DISTINCT'))).trim(trimmer)
+        _word('NOT').or(_keyword('-')).trim(trimmer)
             .seq(ref(p.expression))
             .trim(trimmer).flatten());
     def(p.binaryOperator,

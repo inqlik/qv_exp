@@ -103,11 +103,11 @@ class QvExpParser extends QvExpGrammar {
         throw result.failure("Unknown buil-in function `$funcName`", savedPosition);
       }
       var funcDesc = BUILT_IN_FUNCTIONS[funcName.toUpperCase()];
-      if (!funcDesc.isSetExpressionPossible) {
-         if (result.value[2] != null) {
-           throw result.failure("Set expression is prohibited in function `$funcName`", savedPosition);
-         }
-      }
+//      if (!funcDesc.isSetExpressionPossible) {
+//         if (result.value[2] != null) {
+//           throw result.failure("Set expression is prohibited in function `$funcName`", savedPosition);
+//         }
+//      }
       int actualCardinality = 0;
       if (params != null) {
         actualCardinality = params.length;

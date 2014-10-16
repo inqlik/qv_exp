@@ -58,7 +58,9 @@ const String setElement = 'setElement';
 const String setElementSetInParens = 'setElementSetInParens';
 const String setElementSetPrimary = 'setElementSetPrimary';
 const String totalClause = 'totalClause';
+const String distinctClause = 'distinctClause';
 const String totalModifier = 'totalModifier';
+const String functionModifier = 'functionModifier';
 
 
 

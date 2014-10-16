@@ -45,13 +45,14 @@ void main() {
       shouldPass('if(x > .8, 2)',p.start);
     });
 
-    test('Set expression in function not supporting set expressions: acos({1} 3)',() {
+    skip_test('Set expression in function not supporting set expressions: acos({1} 3)',() {
       shouldFail('acos({1} 3)',p.start);
     });
     test('Wrong cardinality in built-in function: acos(1,3)',() {
       shouldFail('acos(1,3)',p.start);
     });
   });
+  
   group('Set analysis', () {
     group('Set Identifiers', () {
 
@@ -157,41 +158,9 @@ void main() {
       test(r"""{$<Year = {"*"} - {2000}, Product = {"*bearing*"} >} """,() {
          shouldPass(r"""{$<Year = {"*"} - {2000}, Product = {"*bearing*"} >} """,p.setExpression);
        });
-
     });
-
-    group('Set Modifiers Using Assignments with Implicit Set Operators', () {
-      test(r"""{$<Product += {OurProduct1, OurProduct2} >}""",() {
-         shouldPass(r"""{$<Product += {OurProduct1, OurProduct2} >}""",p.setExpression);
-       });
-      test(r"""{$<Year += {"20*",1997} - {2000} >} """,() {
-         shouldPass(r"""{$<Year += {"20*",1997} - {2000} >} """,p.setExpression);
-       });
-      test(r"""{$<Product *= {OurProduct1} >} """,() {
-         shouldPass(r"""{$<Product *= {OurProduct1} >} """,p.setExpression);
-       });
-
-    });
-
-    group('Set Modifiers with Implicit Field Value Definitions', () {
-      test(r"""{$<Customer = P({1<Product={'Shoe'}>} Customer)>}""",() {
-         shouldPass(r"""{$<Customer = P({1<Product={'Shoe'}>} Customer)>}""",p.setExpression);
-       });
-      test(r"""{$<Customer = P({1<Product={'Shoe'}>})>}""",() {
-         shouldPass(r"""{$<Customer = P({1<Product={'Shoe'}>})>}""",p.setExpression);
-       });
-      test(r"""{$<Customer = P({1<Product={'Shoe'}>})>}""",() {
-         shouldPass(r"""{$<Customer = P({1<Product={'Shoe'}>})>}""",p.setExpression);
-       });
-      test(r"""{$<Customer = P({1<Product={Shoe}>} Supplier)>}""",() {
-         shouldPass(r"""{$<Customer = P({1<Product={Shoe}>} Supplier)>}""",p.setExpression);
-       });
-      test(r"""{$<Customer = E({1<Product={'Shoe'}>})>} """,() {
-         shouldPass(r"""{$<Customer = E({1<Product={'Shoe'}>})>}""",p.setExpression);
-       });
-
-    });  
   });
+  
   group('Functions: ', (){
     test(r"""count({$} DISTINCT [Invoice Number])""",() {
          shouldPass(r"""count({$} DISTINCT [Invoice Number])""",p.expression);
@@ -207,7 +176,7 @@ void main() {
          shouldPass(r"""sum(Price*Quantity)""",p.expression);
      });
 
-    solo_test(r"""COUNT(DISTINCT {1<_ФлагДействующаяДата=>} Дата)""",() {
+    test(r"""COUNT(DISTINCT {1<_ФлагДействующаяДата=>} Дата)""",() {
          shouldPass(r"""COUNT({1<_ФлагДействующаяДат={1}>} DISTINCT Дата)""",p.expression);
      });
     test(r"""sum(distinct Price)""",() {
@@ -236,28 +205,26 @@ void main() {
          shouldFail(r"""sum(Sales DISTINCT)""",p.expression);
      });
 
-    test(r"""sum(DISTINCT {1} TOTAL  Sales) - should fail""",() {
-         shouldFail(r"""sum(DISTINCT {1} TOTAL  Sales)""",p.expression);
+    test(r"""sum(DISTINCT {1} TOTAL  Sales)""",() {
+         shouldPass(r"""sum(DISTINCT {1} TOTAL  Sales)""",p.expression);
      });
     test(r"""firstsortedvalue ( total <Grp> PurchasedArticle, OrderDate )""",() {
          shouldPass(r"""firstsortedvalue ( total <Grp> PurchasedArticle, OrderDate )""",p.expression);
      });
   });
-
+  
   group('Samples from codebase: ', (){
-    test(r"""Money(Sum({<_ФлагДействующаяДата={1},ТипДокумента={13},ТипПериода={'Current'}>} Сумма),'# ##0,00')""",() {
+    test(r"Money(Sum({<_ФлагДействующаяДата={1},ТипДокумента={13},ТипПериода={'Current'}>} Сумма),'# ##0,00')",() {
          shouldPass(r"""Money(Sum({<_ФлагДействующаяДата={1},ТипДокумента={13},ТипПериода={'Current'}>} Сумма),'# ##0,00')""",p.start);
      });
-    skip_test(r"""Money(Sum({<_ФлагДействующаяДата={1},ТипДокумента={13},ТипПериода={'Current'}>} Сумма),'# ##0,00')""",() {
-         shouldPass(r"""if (Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') = 0 OR IsNull(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%')), null(), 'qmem://<builtin>/' & if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 1.20,'Arrow_N_G.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 1.051,'Arrow_NE_G.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 1.05 ,'Arrow_NE_G.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 1,'Arrow_E_Y.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= .95 ,'Arrow_W_Y.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= .801  ,'Arrow_SE_R.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= .80 ,'Arrow_S_R.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 0 ,'Arrow_S_R.png','Arrow_S_R.png') ))))))))""",p.start);
-     });
-    test(r"""Some expression from codebase""",() {
+    
+    test(r"Some expression from codebase",() {
          shouldPass(r"""if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1},ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= .80 ,'Arrow_S_R.png')""",p.start);
      });
-    test(r"""$(=Only(OperationType) = 'Sales')""",() {
+    test(r"$(=Only(OperationType) = 'Sales')",() {
       shouldPass(r"""$(=Only(OperationType) = 'Sales')""",p.start);
     });
-    test(r"""Num($($(=If(InMonth(Only(ГодМесяц),1313,0),'Оборачиваемость30','ОборачиваемостьМесяц'))))""",() {
+    test(r"Num($($(=If(InMonth(Only(ГодМесяц),1313,0),'Оборачиваемость30','ОборачиваемостьМесяц'))))",() {
       shouldPass(r"""Num($($(=If(InMonth(Only(ГодМесяц),1313,0),'Оборачиваемость30','ОборачиваемостьМесяц'))))""",p.start);
     });
 
@@ -275,7 +242,22 @@ void main() {
     test(r"""Num($($(=If(InMonth(Only(ГодМесяц),1313,0),'Оборачиваемость30','ОборачиваемостьМесяц')))""",() {
       shouldPass(r"""Num($($(=If(InMonth(Only(ГодМесяц),1313,0),'Оборачиваемость30','ОборачиваемостьМесяц'))))""",p.start);
     });
+    test(r"Some long expression",() {
+      var s = r"""
+  if (Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')
+      /Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') = 0 
+      OR IsNull(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/
+          Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%')), null(), 'qmem://<builtin>/' & if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 1.20,'Arrow_N_G.png', if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')
+              /Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 1.051,'Arrow_NE_G.png', 
+              if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 1.05 ,'Arrow_NE_G.png', 
+              if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 1,'Arrow_E_Y.png', 
+              if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= .95 ,'Arrow_W_Y.png', 
+if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= .801  ,'Arrow_SE_R.png', 
+if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= .80 ,'Arrow_S_R.png', 
+if(Money(Money(Sum({$<ТипДокумента={2}, ТипПериода={'Current'}>}Сумма)/1000,'# ##0,00')/Money(sum({<ТипДокумента = {2},_ФлагДействующаяДата={1}, ТипПериода={'Год'}>}Сумма)/1000,'# ##0,00'),'# ##0,00%') >= 0 ,'Arrow_S_R.png','Arrow_S_R.png') ))))))))""";
+         shouldPass(s,p.start);
+     });
 
     
-  });
+    });
 }
