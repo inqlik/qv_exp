@@ -39,7 +39,7 @@ SET ПланПродаж,"Money(Sum({<_ФлагДействующаяДата={1
     expect(reader.expressions['ПФ_Продажи'].expandedText, startsWith(r'Money(/'));
   });
 
-  skip_test('Test real codebase', () {
+  solo_test('Test real codebase', () {
     var code = r'''
 VariableName,VariableValue,Comments,Priority
 SET vU.CurrentDate,1313,,

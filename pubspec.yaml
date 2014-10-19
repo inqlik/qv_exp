@@ -1,5 +1,5 @@
 name: qv_exp
-version: 0.1.2
+version: 0.1.4
 author: Vadim Tsushko <vadimtsushko@gmail.com>
 description: Syntax check tool for QlikView expressions.
 homepage: https://github.com/vadimtsushko/qv_exp
